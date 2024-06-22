@@ -5,6 +5,7 @@
     <vendor>manu156</vendor>
 
     <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.java</depends>
 
     <resource-bundle>messages.MyBundle</resource-bundle>
 
@@ -15,4 +16,12 @@
     <applicationListeners>
         <listener class="com.github.manu156.testcreatorspringboot.listeners.MyApplicationActivationListener" topic="com.intellij.openapi.application.ApplicationActivationListener"/>
     </applicationListeners>
+
+    <actions>
+        <action id="com.github.manu156.testcreatorspringboot.actions.EditorAction"
+                class="com.github.manu156.testcreatorspringboot.actions.EditorAction" text="Generate Tests"
+                description="Generate TestCases">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+        </action>
+    </actions>
 </idea-plugin>
