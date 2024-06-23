@@ -167,30 +167,43 @@ class EditorAction: AnAction() {
                     // do simple dfs and find such a node
                     // we can always increase a leaf's node's index as long it is less than children.size
                     // we can increase a node's index if and only if all the children have max index
+
+                    // hash current parse tree
+                    // save testcase
+
+                    // do dfs
+                    val dfsStack = ArrayDeque<Node>()
+                    var targetNode: Node?
+
+                    // after finding target node
+                    // termination condition. if target node == root and in last index -> break
+                    // else: -> traverse until we can increase any node index
+
                 } else {
+                    // final state, we have parsed all possibilities
+                    // todo: continue not needed here??
                     continue
                 }
+            } else {
+                for (child in node.children!!) {
+                    if (child.children.isNullOrEmpty()) {
+                        continue
+                    }
+                    if (currentConstructionNode.children.isNullOrEmpty()) {
+                        currentConstructionNode.children = ArrayList()
+                    }
+                    if (child.expIndex == null) {
+                        child.expIndex = 0
+                    }
+                    if (!child.children.isNullOrEmpty()) {
+                        val grandChild = child.children!![child.expIndex!!]
+                        traversalStack.add(grandChild)
+                        constructionStack.add(grandChild.cloneWithNonRecursiveParameters())
+                        currentConstructionNode.children!!.add(grandChild)
+                    }
+
+                }
             }
-
-            for (child in node.children!!) {
-                if (child.children.isNullOrEmpty()) {
-                    continue
-                }
-                if (currentConstructionNode.children.isNullOrEmpty()) {
-                    currentConstructionNode.children = ArrayList()
-                }
-                if (child.expIndex == null) {
-                    child.expIndex = 0
-                }
-                if (!child.children.isNullOrEmpty()) {
-                    val grandChild = child.children!![child.expIndex!!]
-                    traversalStack.add(grandChild)
-                    constructionStack.add(grandChild.cloneWithNonRecursiveParameters())
-                    currentConstructionNode.children!!.add(grandChild)
-                }
-
-            }
-
         }
 
         return emptyList()
