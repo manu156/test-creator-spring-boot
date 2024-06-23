@@ -55,6 +55,7 @@ class EditorAction: AnAction() {
                 val node = Node()
                 node.nodeType = NodeType.Conditional
                 node.psiElement = psiElement
+                node.parent = root
                 root.cIds!!.add(i)
                 root.cPsis = ArrayList()
                 root.children!!.add(node)
@@ -82,9 +83,10 @@ class EditorAction: AnAction() {
                         val node = Node()
                         node.nodeType = NodeType.Conditional
                         node.psiElement = psiElement
-                        root.cIds!!.add(i)
-                        root.cPsis = ArrayList()
-                        root.children!!.add(node)
+                        node.parent = current
+                        current.cIds!!.add(i)
+                        current.cPsis = ArrayList()
+                        current.children!!.add(node)
                         stack.add(node)
                     }
                 }
@@ -100,6 +102,7 @@ class EditorAction: AnAction() {
                         val node = Node()
                         node.nodeType = NodeType.Body
                         node.psiElement = currentIfPsi.thenBranch
+                        node.parent = current
                         current.cPsis!!.add(currentIfPsi)
                         current.children!!.add(node)
                         stack.add(node)
@@ -110,6 +113,7 @@ class EditorAction: AnAction() {
                         val node = Node()
                         node.nodeType = NodeType.Body
                         node.psiElement = currentIfPsi.thenBranch
+                        node.parent = current
                         current.cPsis!!.add(currentIfPsi)
                         current.children!!.add(node)
                         stack.add(node)
@@ -117,6 +121,7 @@ class EditorAction: AnAction() {
                         val node2 = Node()
                         node2.nodeType = NodeType.Body
                         node2.psiElement = currentIfPsi.elseBranch
+                        node2.parent = current
                         current.cPsis!!.add(currentIfPsi)
                         current.children!!.add(node)
                         stack.add(node2)
@@ -126,6 +131,7 @@ class EditorAction: AnAction() {
                         val node = Node()
                         node.nodeType = NodeType.Body
                         node.psiElement = currentIfPsi.thenBranch
+                        node.parent = current
                         current.cPsis!!.add(currentIfPsi)
                         current.children!!.add(node)
                         stack.add(node)
@@ -137,57 +143,54 @@ class EditorAction: AnAction() {
         }
         root.discovered = true
 
-        /*
-        pathHashes = {}
-        tests = []
-        stack = []
-        stack.add(root)
-        while(stack.isNotEmpty()) {
-            path = calculatePath() {
-                node = stack.last()
-                // expIndex states:
-                //  null -> never used
-                //  k, k>=0 -> kth left branch
-                // state transfer:
-                //  if null -> set 0 and goto next node
-                //  if not last node (>=0) -> goto next node
-                //  if last node and less than children increment
-                //  else
-                //  -> if left node exists -> goto left node and increment and mark all the children null
-                //  if max on all left nodes then increment grandparent node and mark all children null
-            }
-            if (path == null) {
-                break
-            }
-            hash = calculatePathHash(path) // check feasibility as well
-            if hash not in pathHashes {
-                tests.add(calculateTest(path))
-            }
-        }
-         */
+        val traversalStack = ArrayDeque<Node>()
+        traversalStack.add(root)
+        var constructionStack = ArrayDeque<Node>()
+        var constructionRoot = root.cloneWithNonRecursiveParameters()
+        constructionStack.add(constructionRoot)
+        while (traversalStack.isNotEmpty()) {
+            val node = traversalStack.removeLast()
+            val currentConstructionNode = constructionStack.removeLast()
+            if (node.children.isNullOrEmpty()) {
+                if (traversalStack.isEmpty()) {
+                    // we have completed generation of one traversal of tree
+                    // -> update counters
+                    // -> generate test
+                    // -> reset constructionStack
+                    // add back root with updated counters
 
-        val paths = mutableListOf<MutableList<Node>>()
-        val currentPath = mutableListOf<String>()
-        val pathHashes = mutableSetOf<String>()
-        val testStrings = mutableSetOf<String>()
-        val frameStack = ArrayDeque<ArrayDeque<Node>>()
-        frameStack.add(ArrayDeque())
-        frameStack.first().add(root)
-        while (frameStack.isNotEmpty()) {
-            val nodeStack = frameStack.last()
-            if (nodeStack.isEmpty()) {
-                frameStack.removeLast()
-                continue
-            }
-            val isBodyTypeNode = nodeStack.first().nodeType == NodeType.Body
-            if (isBodyTypeNode) {
-                for (node in nodeStack) {
-                    if (node.expIndex == null) {
-                        node.expIndex = 0
+                    // todo: break for debugging
+                    log.info(constructionRoot.toString())
 
-                    }
+                    // since we are following stack, first child of root will be current node
+                    // let's just try to increment any lowest value
+                    // do simple dfs and find such a node
+                    // we can always increase a leaf's node's index as long it is less than children.size
+                    // we can increase a node's index if and only if all the children have max index
+                } else {
+                    continue
                 }
             }
+
+            for (child in node.children!!) {
+                if (child.children.isNullOrEmpty()) {
+                    continue
+                }
+                if (currentConstructionNode.children.isNullOrEmpty()) {
+                    currentConstructionNode.children = ArrayList()
+                }
+                if (child.expIndex == null) {
+                    child.expIndex = 0
+                }
+                if (!child.children.isNullOrEmpty()) {
+                    val grandChild = child.children!![child.expIndex!!]
+                    traversalStack.add(grandChild)
+                    constructionStack.add(grandChild.cloneWithNonRecursiveParameters())
+                    currentConstructionNode.children!!.add(grandChild)
+                }
+
+            }
+
         }
 
         return emptyList()
